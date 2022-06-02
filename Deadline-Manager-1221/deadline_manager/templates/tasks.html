@@ -1,0 +1,145 @@
+{% extends "main.html" %}
+{% load crispy_forms_tags %}
+
+{% block content %}      
+
+{% load crispy_forms_tags %}
+
+<div class="container py-5">
+    <div class="d-flex flex-row align-items-baseline mb-3">
+        <h1>Tasks</h1>
+        <p class="ml-4 d-flex align-items-center">
+            <svg class="mr-1" fill="#000000" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 50" width="25px" height="25px">
+                <path d="M 5 4 C 3.346 4 2 5.346 2 7 L 2 13 L 3 13 L 47 13 L 48 13 L 48 11 C 48 9.346 46.654 8 45 8 L 18.044922 8.0058594 C 17.765922 7.9048594 17.188906 6.9861875 16.878906 6.4921875 C 16.111906 5.2681875 15.317 4 14 4 L 5 4 z M 3 15 C 2.448 15 2 15.448 2 16 L 2 43 C 2 44.657 3.343 46 5 46 L 45 46 C 46.657 46 48 44.657 48 43 L 48 16 C 48 15.448 47.552 15 47 15 L 3 15 z"/>
+            </svg>
+            {{task_folder.title}}</p>
+    </div>
+    <button id="open_form" class="btn btn-info mb-4">Create Task</button>
+    <button id="hide_form" style="display: none;" class="btn btn-secondary mb-2">Hide Form</button>
+    <form method="POST" style="display: none;" class="mb-5">
+        {% csrf_token %}
+        {{ form|crispy }}
+        <button class="btn btn-primary" type="submit">Create</button>
+    </form>
+    <div>
+        <table class="table mb-4">
+            <thead>
+                <tr>
+                  <th scope="col">No</th>
+                  <th scope="col">Task</th>
+                  <th scope="col">Deadline</th>
+                  <th scope="col">Tags</th>
+                  <th scope="col">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for task in tasks %}
+                <tr>
+                  <th scope="row">
+                    {{ forloop.counter }} 
+                    <svg class="show_text" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-eye" viewBox="0 0 16 16">
+                        <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z"/>
+                        <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/>
+                    </svg>
+                  </th>
+                  <td {% if task.finished %} style="text-decoration: line-through;" {% else %} "" {% endif %}>{{task.title}}</td>
+                  <td {% if task.finished %} style="text-decoration: line-through;" {% else %} "" {% endif %}>{{task.deadline}}</td>
+                  <td {% if task.finished %} style="text-decoration: line-through;" {% else %} "" {% endif %}>
+                    {% for tag in task.tags.all %}
+                        {% if task_folder %}
+                        <a href="{% url 'tasks_by_folder' task_folder=task_folder.id %}?tag={{tag.title}}">#{{tag.title}}</a>
+                        {% else %}
+                        <a href="{% url 'all_tasks' %}?tag={{tag.title}}">#{{tag.title}}</a>
+                        {% endif %}
+                    {% endfor %}
+                  </td>
+                  <td>
+                    <button type="submit" data-id="{{task.id}}" class="btn btn-danger">Delete</button>
+                    {% if not task.finished %}
+                        <button type="submit" data-id="{{task.id}}" class="btn btn-success ms-1">Finished</button>
+                    {% else %}
+                        <button type="submit" data-id="{{task.id}}" class="btn btn-warning ms-1">Redo</button>
+                    {% endif %}    
+                  </td>
+                </tr>
+                <td class="task_text" style="display: none;" class="m-4" colspan="5"><div class="shadow p-3 m-2 bg-white rounded">{{ task.text }}</div></td>
+                {% endfor %}
+            </tbody>
+        </table>            
+    </div>
+</div>
+
+<script>
+    window.addEventListener("load", () => {
+        var btnSuccess = document.getElementsByClassName("btn-success")
+        var btnWarning = document.getElementsByClassName("btn-warning")
+        var btnDanger = document.getElementsByClassName("btn-danger")
+        for(let i=0; i < btnSuccess.length; i++) {
+            btnSuccess[i].addEventListener("click", () => {
+                fetch("{% url 'change_task_finished' task_id=444 %}".replace("444", btnSuccess[i].dataset.id), {
+                    method: "GET",
+                    headers: {'Content-Type': 'application/json'}, 
+                })
+                .then(res => {
+                    window.location.reload()
+                })
+            })
+        }
+        for(let i=0; i < btnWarning.length; i++) {
+            btnWarning[i].addEventListener("click", () => {
+                fetch("{% url 'change_task_finished' task_id=444 %}".replace("444", btnWarning[i].dataset.id), {
+                    method: "GET",
+                    headers: {'Content-Type': 'application/json'}, 
+                })
+                .then(res => {
+                    window.location.reload()
+                })
+            })
+        }
+        for(let i=0; i < btnDanger.length; i++) {
+            btnDanger[i].addEventListener("click", () => {
+                window.confirm("Are you sure you want to delete this task?")
+                fetch("{% url 'delete_task' task_id=444 %}".replace("444", btnDanger[i].dataset.id), {
+                    method: "GET",
+                    headers: {'Content-Type': 'application/json'}, 
+                })
+                .then(res => {
+                    window.location.reload()
+                })
+            })
+        }
+    })
+
+    var openForm = document.getElementById("open_form")
+    var form = document.getElementsByTagName("form")[0] 
+    var table = document.getElementsByTagName("table")[0] 
+    var hideForm = document.getElementById("hide_form")
+    
+    openForm.addEventListener("click", () => {
+        openForm.style.display = "none";
+        form.style.display = "block";
+        table.style.display = "none";
+        hideForm.style.display = "block";
+    })
+    hideForm.addEventListener("click", () => {
+        openForm.style.display = "block";
+        form.style.display = "none";
+        table.style.display = "table";
+        hideForm.style.display = "none";
+    })
+
+    var showText = document.getElementsByClassName("show_text");
+    var taskText = document.getElementsByClassName("task_text");
+
+    for(let i=0; i<showText.length; i++) {
+        showText[i].addEventListener("click", () => {
+            if(taskText[i].style.display == "none") {
+                taskText[i].style.display = "table-cell"
+            } else {
+                taskText[i].style.display = "none"
+            }
+        })
+    }
+</script>
+
+{% endblock %}

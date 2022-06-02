@@ -1,0 +1,96 @@
+{% extends "main.html" %}
+
+{% block content %}      
+
+{% load crispy_forms_tags %}
+
+<div class="container py-5 ">
+    <h1 class="mb-3">Task Folders</h1>
+    <button id="open_form" class="btn btn-info mb-4">Create Folder</button>
+    <button id="hide_form" style="display: none;" class="btn btn-secondary mb-2">Hide Form</button>
+    <form style="display: none;" method="POST">
+      {% csrf_token %}
+      {{ form|crispy }}
+      <button class="btn btn-primary" type="submit">Create</button>
+    </form>
+    <div>
+        <table class="table mb-4">
+            <thead>
+                <tr>
+                  <th scope="col">No</th>
+                  <th scope="col">Folder</th>
+                  <th scope="col">Tasks No</th>
+                  <th scope="col">Tags</th>
+                  <th scope="col">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for folder in task_folders %}
+                <tr>
+                  <th scope="row">{{forloop.counter}}</th>
+                  <td>
+                    <a class="d-flex align-items-center" href='{% url "tasks_by_folder" task_folder=folder.id %}'>
+                        <svg class="mr-2" fill="#000000" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 50" width="25px" height="25px">
+                            <path d="M 5 4 C 3.346 4 2 5.346 2 7 L 2 13 L 3 13 L 47 13 L 48 13 L 48 11 C 48 9.346 46.654 8 45 8 L 18.044922 8.0058594 C 17.765922 7.9048594 17.188906 6.9861875 16.878906 6.4921875 C 16.111906 5.2681875 15.317 4 14 4 L 5 4 z M 3 15 C 2.448 15 2 15.448 2 16 L 2 43 C 2 44.657 3.343 46 5 46 L 45 46 C 46.657 46 48 44.657 48 43 L 48 16 C 48 15.448 47.552 15 47 15 L 3 15 z"/>
+                        </svg>
+                    {{folder.title}}
+                    </a>
+                  </td>
+                  <td>{{folder.number_of_tasks}}</td>
+                  <td>
+                      {% for tag in folder.tags.all %}
+                        <a href="{% url 'task_folders' %}?tag={{tag.title}}">#{{tag.title}}</a>
+                      {% endfor %}
+                    </td>
+                  <td>
+                    <button type="submit" data-id="{{folder.id}}" class="btn btn-danger">Delete</button>
+                  </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>    
+    </div>
+</div>
+
+<style>
+    a {
+        text-decoration: none;
+        font-size: 17px;
+    }
+</style>
+
+<script>
+  var openForm = document.getElementById("open_form")
+  var form = document.getElementsByTagName("form")[0] 
+  var table = document.getElementsByTagName("table")[0] 
+  var hideForm = document.getElementById("hide_form")
+  
+  openForm.addEventListener("click", () => {
+      openForm.style.display = "none";
+      form.style.display = "block";
+      table.style.display = "none";
+      hideForm.style.display = "block";
+  })
+  hideForm.addEventListener("click", () => {
+      openForm.style.display = "block";
+      form.style.display = "none";
+      table.style.display = "table";
+      hideForm.style.display = "none";
+  })
+
+  var btnDanger = document.getElementsByClassName("btn-danger")
+  for(let i=0; i < btnDanger.length; i++) {
+      btnDanger[i].addEventListener("click", () => {
+          window.confirm("Are you sure you want to delete this folder?")
+          fetch("{% url 'delete_folder_task' task_folder_id=444 %}".replace("444", btnDanger[i].dataset.id), {
+              method: "GET",
+              headers: {'Content-Type': 'application/json'}, 
+          })
+          .then(res => {
+              window.location.reload()
+          })
+      })
+  }
+</script>
+
+{% endblock %}
